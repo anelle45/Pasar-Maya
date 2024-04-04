@@ -1,0 +1,46 @@
+version: '3.4'
+
+networks:
+  pasarmaya-network:
+    driver: bridge
+
+services:
+  pasarmaya-db:
+    container_name: api-db
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    ports:
+      - 8011:1433
+    environment: 
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${DB_PASSWORD}
+      - MSSQL_PID=Express
+    restart: always
+    volumes:
+      - app-db-volume:/var/opt/mssql
+    networks:
+      - pasarmaya-network
+
+  Pasar-Maya-api:
+    container_name: api-app
+    image: ${DOCKER_REGISTRY-}pasarmayaapi
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+    - 8010:80
+    depends_on:
+      - pasarmaya-db
+    environment:
+      - ConnectionStrings__DefaultConnection=${KONEKSI_DB}
+      - Jwt__Key=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+    volumes:
+      - app-api-volume:/root/.aspnet/DataProtection-Keys
+    networks:
+      - pasarmaya-network
+
+volumes:
+  app-api-volume:
+  app-db-volume:
+
