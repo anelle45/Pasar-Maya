@@ -47,7 +47,7 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddSwaggerGen(c =>
 {
-	c.SwaggerDoc("v1", new OpenApiInfo { Title = "Pasar-Maya Hoaksss", Version = "v1" });
+	c.SwaggerDoc("v1", new OpenApiInfo { Title = "Pasar-Maya", Version = "v1" });
 
 	// Konfigurasi untuk menambahkan header Bearer
 	var securityScheme = new OpenApiSecurityScheme
