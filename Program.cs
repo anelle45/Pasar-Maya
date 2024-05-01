@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Net;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,12 +34,13 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<ResponseHelper>();
 builder.Services.AddTransient<Seed>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddMemoryCache();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddCors(options =>
 {
-	options.AddPolicy("AllowAgilMilf", builder =>
+	options.AddPolicy("AllowAgil", builder =>
 	{
 		builder.WithOrigins("https://pasarmaya.agilf.dev")
 			.AllowAnyHeader()
@@ -78,9 +80,18 @@ builder.Services.AddSwaggerGen(c =>
 	c.AddSecurityRequirement(securityRequirement);
 });
 
-builder.Services.AddDbContext<DataContext>(options => {
-	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-});
+
+builder.Services.AddDbContext<DataContext>(options =>
+options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlServerOptionsAction: sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+        }));
+
 builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
 	options.Password.RequireDigit = true;
@@ -101,7 +112,7 @@ builder.Services.AddAuthentication(auth =>
 })
 	.AddJwtBearer(options =>
 	{
-		options.TokenValidationParameters = new TokenValidationParameters
+        options.TokenValidationParameters = new TokenValidationParameters
 		{
 			ValidateIssuer = true,
 			ValidateAudience = true,

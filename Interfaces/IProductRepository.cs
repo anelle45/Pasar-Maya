@@ -6,9 +6,11 @@ namespace Pasar_Maya_Api.Interfaces
 {
 	public interface IProductRepository
 	{
+
 		ICollection<Product> GetProducts(PaginationDto paginationDto);
 		ICollection<Product> SearchProduct(string search, PaginationDto paginationDto);
-		Product GetProduct(int id);
+        ICollection<Product> HeuristicKeywordSearch(string search, PaginationDto paginationDto);
+        Product GetProduct(int id);
 		bool AddProduct(Product product);
 		bool UpdateProduct(Product product);
 		bool DeleteProduct(int id);

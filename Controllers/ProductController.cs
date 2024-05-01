@@ -9,6 +9,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
+using Pasar_Maya_Api.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Pasar_Maya_Api.Controllers
 {
@@ -18,18 +23,24 @@ namespace Pasar_Maya_Api.Controllers
 	public class ProductController : Controller
 	{
 		private readonly IMapper _mapper;
-		private readonly ResponseHelper _responseHelper;
+        private readonly IMemoryCache _memoryCache;
+        private readonly ResponseHelper _responseHelper;
 		private readonly IProductRepository _productRepository;
 		private readonly ICommodityRepository _commodityRepository;
 		private readonly IAreaRepository _areaRepository;
 		private readonly IUserRepository _userRepository;
-
-		public ProductController(IMapper mapper,
+        private readonly DataContext _context;
+		private readonly LocalData localData;
+        public ProductController(
+			IMapper mapper,
             ResponseHelper responseHelper,
             IProductRepository productRepository,
             ICommodityRepository commodityRepository,
             IAreaRepository areaRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+			DataContext context,
+			IMemoryCache cache
+			)
         {
 			_mapper = mapper;
 			_responseHelper = responseHelper;
@@ -37,6 +48,9 @@ namespace Pasar_Maya_Api.Controllers
 			_commodityRepository = commodityRepository;
 			_areaRepository = areaRepository;
 			_userRepository = userRepository;
+			_context = context;
+            _memoryCache = cache;
+            localData = new LocalData(_context, _mapper, _memoryCache);
 		}
 
 		[HttpGet]
@@ -46,8 +60,9 @@ namespace Pasar_Maya_Api.Controllers
 			try
 			{
 				var products = _mapper.Map<List<ProductDto>>(_productRepository.GetProducts(paginationDto));
+       
 
-				if (!ModelState.IsValid)
+                if (!ModelState.IsValid)
 					return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 				if (products.Any() != true)
 					return Ok(_responseHelper.Success("No products found"));
@@ -245,7 +260,67 @@ namespace Pasar_Maya_Api.Controllers
 			}
 		}
 
-		[HttpGet("{productId}/images")]
+        [HttpGet("search/local")]
+        [ProducesResponseType(200, Type = typeof(IEnumerable<ProductDto>))]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public IActionResult SearchProductsLocal([FromQuery] string search, [FromQuery] PaginationDto paginationDto)
+        {
+            try
+            {
+                
+				
+				var result = localData.GetProducts();
+		
+                if (!ModelState.IsValid)
+                    return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
+
+                if (result.Any() != true)
+                    return NotFound(_responseHelper.Error("No products found", 404));
+
+                var resultMap = _mapper.Map<List<ProductDto>>(result);
+                return Ok(_responseHelper.Success("", resultMap));
+            }
+            catch (SqlException ex)
+            {
+                return StatusCode(500, _responseHelper.Error("Something went wrong in sql execution", 500, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, _responseHelper.Error("Something went wrong", 500, ex.Message));
+            }
+        }
+
+        [HttpGet("search/heuristic")]
+        [ProducesResponseType(200, Type = typeof(IEnumerable<ProductDto>))]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public IActionResult SearchProductsHeuristic([FromQuery] string search, [FromQuery] PaginationDto paginationDto)
+        {
+            try
+            {
+
+
+                var result = _productRepository.HeuristicKeywordSearch(search, paginationDto);
+                if (!ModelState.IsValid)
+                    return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
+
+                if (result.Any() != true)
+                    return NotFound(_responseHelper.Error("No products found", 404));
+
+                var resultMap = _mapper.Map<List<ProductDto>>(result);
+                return Ok(_responseHelper.Success("", resultMap));
+            }
+            catch (SqlException ex)
+            {
+                return StatusCode(500, _responseHelper.Error("Something went wrong in sql execution", 500, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, _responseHelper.Error("Something went wrong", 500, ex.Message));
+            }
+        }
+        [HttpGet("{productId}/images")]
 		[ProducesResponseType(200, Type = typeof(IEnumerable<ImageDto>))]
 		public IActionResult GetDiscussionAnswerImages(int productId)
 		{
