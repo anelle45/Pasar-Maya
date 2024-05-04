@@ -110,13 +110,20 @@ namespace Pasar_Maya_Api.Repository
 
 		public ICollection<Product> SearchProduct(string search, PaginationDto paginationDto)
 		{
-			var products = _context.Products
-				.Where(p => p.Name.Contains(search) || p.Description.Contains(search) || p.Commodity.Name.Contains(search))
-				.Include(p => p.Commodity)
-				.Include(p => p.Area)
+            var searchWords = search.ToLower().Split(' ');
+
+            var allProducts = _context.Products
+                .Include(p => p.Commodity)
+                .Include(p => p.Area)
+                .ToList();
+
+            var products = allProducts
+				.Where(p => p.Name != null && p.Description != null &&
+							(searchWords.Intersect(p.Name.ToLower().Split(' ')).Any() || 
+							searchWords.Intersect(p.Description.ToLower().Split(' ')).Any()))
 				.Skip((paginationDto.PageNumber - 1) * paginationDto.PageSize)
 				.Take(paginationDto.PageSize)
-				.OrderByDescending(p => p.ProductReviews.Sum(pr => pr.Likes))
+				.OrderByDescending(p => p.ProductReviews?.Sum(pr => pr.Likes) ?? 0)
 				.ThenBy(p => p.Price)
 				.ToList();
 
@@ -124,46 +131,65 @@ namespace Pasar_Maya_Api.Repository
 		}
         public ICollection<Product> HeuristicKeywordSearch(string searchQuery, PaginationDto paginationDto)
         {
-            // Split the search query into individual words
-            var searchWords = searchQuery.Split(' ');
 
-            // Find products where the name or description contains any of the search words
-            var matchingProducts = _context.Products
-                .Where(p => searchWords.Any(sw => p.Name.Contains(sw) || p.Description.Contains(sw)))
+            // Split the search query into individual words
+            var searchWords = searchQuery.ToLower().Split(' ');
+
+            // Get all products
+            var allProducts = _context.Products
                 .Include(p => p.Commodity)
                 .Include(p => p.Area)
+                .ToList();
+
+            // Find products where the name or description contains any of the search words
+            var matchingProducts = allProducts
+               .Where(p => p.Name != null && p.Description != null &&
+                            (searchWords.Intersect(p.Name.ToLower().Split(' ')).Any() ||
+							searchWords.Intersect(p.Description.ToLower().Split(' ')).Any()))
                 .Skip((paginationDto.PageNumber - 1) * paginationDto.PageSize)
                 .Take(paginationDto.PageSize)
                 .ToList();
 
+            var averagePrice = matchingProducts.Average(p => p.Price);
             // Rank the products based on a heuristic
-            var rankedProducts = matchingProducts
-                .Select(p => new
-                {
-                    Product = p,
-                    Score = CalculateScore(p, searchWords)
-                })
-                .OrderByDescending(p => p.Score)
-                .Select(p => p.Product)
-                .ToList();
+            var rankedProducts = matchingProducts?
+				.Select(p => new
+				{
+					Product = p,
+					Score = CalculateScore(p, searchWords, averagePrice)
+				})
+				.OrderByDescending(p => p.Score)
+				.Select(p => p.Product)
+				.ToList();
 
-            return _mapper.Map<ICollection<Product>>(rankedProducts);
+            if (rankedProducts != null)
+            {
+                return _mapper.Map<ICollection<Product>>(rankedProducts);
+            }
+            else
+            {
+                return _mapper.Map<ICollection<Product>>(null);
+            }
+            
         }
 
-        public double CalculateScore(Product product, string[] searchWords)
+        public double CalculateScore(Product product, string[] searchWords, double averagePrice)
         {
-            // Count how many times a word from the search query appears in the product name or description
-            var matchCount = searchWords.Count(sw => product.Name.Contains(sw) || product.Description.Contains(sw));
+            // Count how many times a word from the search query appears in the product name and description
+            var matchCount = searchWords.Count(
+				sw => 
+				(product.Name != null && product.Name.Contains(sw)));
 
-            // Get the sum of scores from product reviews
-            var sumScore = product.ProductReviews.Sum(pr => pr.Likes);
+			var matchDescription = searchWords.Count(
+				sw => (product.Description != null && product.Description.Contains(sw))) / 10;
 
-            // Consider the price in the score. You might want to normalize the price so it doesn't outweigh the other factors.
-            // This is just an example, you might want to adjust the formula according to your needs.
-            var normalizedPrice = 1 / (1 + product.Price);
+            var sumScore = product.ProductReviews?.Sum(pr => pr.Likes) ?? 0;
 
-            // Calculate the final score
-            var score = matchCount + sumScore + normalizedPrice;
+			// normalize the price to not outweigh the other factors.
+			var normalizedPrice = product.Price/averagePrice;
+
+            // Calculate the final score with weights
+            var score = 0.2 * matchCount + 0.1 * matchDescription + 0.4 * sumScore + 0.3 * (1 - normalizedPrice);
 
             return score;
         }
