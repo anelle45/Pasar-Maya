@@ -12,7 +12,7 @@ using Pasar_Maya_Api.Data;
 namespace Pasar_Maya_Api.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20240416160432_InitialCreate")]
+    [Migration("20240501064344_Init")]
     partial class InitialCreate
     {
         /// <inheritdoc />
