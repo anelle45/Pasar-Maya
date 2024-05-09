@@ -141,6 +141,10 @@ namespace Pasar_Maya_Api.Repository
                 .Include(p => p.Area)
                 .ToList();
 
+            if (allProducts == null)
+            {
+                return _mapper.Map<ICollection<Product>>(null);
+            }
             // Find products where the name or description contains any of the search words
             var matchingProducts = allProducts
                .Where(p => p.Name != null && p.Description != null &&
@@ -150,26 +154,38 @@ namespace Pasar_Maya_Api.Repository
                 .Take(paginationDto.PageSize)
                 .ToList();
 
-            var averagePrice = matchingProducts.Average(p => p.Price);
-            // Rank the products based on a heuristic
-            var rankedProducts = matchingProducts?
-				.Select(p => new
-				{
-					Product = p,
-					Score = CalculateScore(p, searchWords, averagePrice)
-				})
-				.OrderByDescending(p => p.Score)
-				.Select(p => p.Product)
-				.ToList();
-
-            if (rankedProducts != null)
+			if(matchingProducts == null)
+			{
+                return _mapper.Map<ICollection<Product>>(null);
+            }
+            if (matchingProducts.Any())
             {
-                return _mapper.Map<ICollection<Product>>(rankedProducts);
+                var averagePrice = matchingProducts.Average(p => p.Price);
+                // Rank the products based on a heuristic
+                var rankedProducts = matchingProducts?
+                    .Select(p => new
+                    {
+                        Product = p,
+                        Score = CalculateScore(p, searchWords, averagePrice)
+                    })
+                    .OrderByDescending(p => p.Score)
+                    .Select(p => p.Product)
+                    .ToList();
+
+                if (rankedProducts != null)
+                {
+                    return _mapper.Map<ICollection<Product>>(rankedProducts);
+                }
+                else
+                {
+                    return _mapper.Map<ICollection<Product>>(null);
+                }
             }
             else
             {
                 return _mapper.Map<ICollection<Product>>(null);
             }
+          
             
         }
 

@@ -245,7 +245,7 @@ namespace Pasar_Maya_Api.Controllers
 					return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 				
 				if (result.Any() != true)
-					return NotFound(_responseHelper.Error("No products found", 404));
+					return Ok(_responseHelper.Success("No products found"));
 
 				var resultMap = _mapper.Map<List<ProductDto>>(result);
 				return Ok(_responseHelper.Success("", resultMap));
@@ -306,7 +306,7 @@ namespace Pasar_Maya_Api.Controllers
                     return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 
                 if (result.Any() != true)
-                    return NotFound(_responseHelper.Error("No products found", 404));
+                    return Ok(_responseHelper.Success("No products found"));
 
                 var resultMap = _mapper.Map<List<ProductDto>>(result);
                 return Ok(_responseHelper.Success("", resultMap));

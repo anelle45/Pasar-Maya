@@ -32,8 +32,9 @@ namespace Pasar_Maya_Api
 			{
 				await _roleManager.CreateAsync(new IdentityRole("Admin"));
 				await _roleManager.CreateAsync(new IdentityRole("User"));
+                await _roleManager.CreateAsync(new IdentityRole("Seller"));
 
-				var admin = new User
+                var admin = new User
 				{
 					Name = "Admin",
 					UserName = "admin",
@@ -78,8 +79,35 @@ namespace Pasar_Maya_Api
 						Console.WriteLine(e.Message);
 					}
 				}
-
-				var imageNew = new List<Image>(){
+                var userSellerNew = new List<User>()
+                {
+                    new User
+                    {
+                        Name = "Pedagang sayur",
+                        UserName = "sayur123",
+                        Email = "sayur@pasya.com"
+                    },
+                    new User
+                    {
+                        Name = "Pedagang buah",
+                        UserName = "buah123",
+                        Email = "buah@pasya.com"
+                    },
+                };
+                foreach (var users in userSellerNew)
+                {
+                    try
+                    {
+                        await _userManager.CreateAsync(users, "walangkecek123");
+                        await _userManager.AddToRoleAsync(users, "Seller");
+                        Console.WriteLine($"User {users.UserName} created successfully.");
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e.Message);
+                    }
+                }
+                var imageNew = new List<Image>(){
 					new Image
 					{
 						Path = "https://fastly.picsum.photos/id/12/2500/1667.jpg?hmac=Pe3284luVre9ZqNzv1jMFpLihFI6lwq7TPgMSsNXw2w",
