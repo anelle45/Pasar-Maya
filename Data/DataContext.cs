@@ -28,6 +28,7 @@ namespace Pasar_Maya_Api.Data
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductImage> ProductImages { get; set; }
         public DbSet<ProductReview> ProductReviews { get; set; }
+        public DbSet<ProductNegotiation> ProductNegotiations { get; set; }
         public DbSet<ProductReviewImage> ProductReviewImages { get; set; }
         /*public DbSet<User> Users { get; set; }*/
         public DbSet<UserArea> UserAreas { get; set; }
@@ -132,6 +133,11 @@ namespace Pasar_Maya_Api.Data
             modelBuilder.Entity<ProductReview>()
                 .HasOne(pr => pr.Product)
                 .WithMany(p => p.ProductReviews)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<ProductNegotiation>()
+                .HasOne(pn => pn.Product)
+                .WithMany(p => p.ProductNegotiations)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Order>()
