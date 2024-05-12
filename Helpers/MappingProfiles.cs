@@ -35,6 +35,12 @@ namespace Pasar_Maya_Api.Helpers
             CreateMap<Notification, NotificationDto>();
             CreateMap<NotificationPostDto, Notification>();
             CreateMap<NotificationPutDto, Notification>();
+            CreateMap<NegotiationsPostDto, ProductNegotiation>();
+            CreateMap<NegotiationPutDto, ProductNegotiation>();
+            CreateMap<ProductNegotiation, NegotiationDto>()
+              .ForMember(dest => dest.NegotiateById, options => options.MapFrom(src => src.NegotiateBy.Id))
+              .ForMember(dest => dest.ProductId, options => options.MapFrom(src => src.Product.Id));
+
             CreateMap<Product, ProductDto>()
                 .ForMember(dest => dest.CommodityId, options => options.MapFrom(src => src.Commodity.Id))
                 .ForMember(dest => dest.AreaId, options => options.MapFrom(src => src.Area.Id))

@@ -27,6 +27,7 @@ builder.Services.AddScoped<IImageRepository, ImageRepository>();
 builder.Services.AddScoped<ICommodityTypeRepository, CommodityTypeRepository>();
 builder.Services.AddScoped<ICommodityRepository, CommodityRepository>();
 builder.Services.AddScoped<IPredictionRepository, PredictionRepository>();
+builder.Services.AddScoped<INegotiationRepository, NegotiationRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductReviewRepository, ProductReviewRepository>();
