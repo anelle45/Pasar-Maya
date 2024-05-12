@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using AutoMapper;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
@@ -9,56 +9,48 @@ using Pasar_Maya_Api.Dto.BodyModels;
 using Pasar_Maya_Api.Helpers;
 using Pasar_Maya_Api.Interfaces;
 using Pasar_Maya_Api.Models;
-using Pasar_Maya_Api.Repository;
 
 namespace Pasar_Maya_Api.Controllers
 {
+
     [Route("api/[controller]")]
     [ApiController]
-    public class NegotiationController : ControllerBase
+    public class CartController : ControllerBase
     {
         private readonly IMapper _mapper;
-        private readonly IMemoryCache _memoryCache;
         private readonly ResponseHelper _responseHelper;
-        private readonly INegotiationRepository _negotiationRepository;
-        private readonly IUserRepository _userRepository;
-        private readonly IProductRepository _productRepository;
-        private readonly DataContext _context;
-        public NegotiationController(
+        private readonly ICartRepository _cartRepository;
+        public CartController(
             IMapper mapper,
             ResponseHelper responseHelper,
             INegotiationRepository negotiationRepository,
             IUserRepository userRepository,
             IProductRepository productRepository,
+            ICartRepository cartRepository,
             DataContext context,
             IMemoryCache cache
             )
         {
             _mapper = mapper;
             _responseHelper = responseHelper;
-            _userRepository = userRepository;
-            _negotiationRepository = negotiationRepository;
-            _productRepository = productRepository;
-            _context = context;
-            _memoryCache = cache;
+            _cartRepository = cartRepository;
         }
-
-        [HttpGet]
-        [ProducesResponseType(200, Type = typeof(IEnumerable<NegotiationDto>))]
+        [HttpGet("{cartId}")]
+        [ProducesResponseType(200, Type = typeof(IEnumerable<CartDto>))]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public IActionResult GetNegotiationsFromProduct([FromQuery] int productId)
+        public IActionResult GetCartById(int cartId)
         {
             try
             {
-                var result = _mapper.Map<List<NegotiationDto>>(_negotiationRepository.GetNegotiationsByProductId(productId));
+                var result = _mapper.Map<CartDto>(_cartRepository.GetCartById(cartId));
                 if (!ModelState.IsValid)
                     return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 
-                if (result.Any() != true)
-                    return Ok(_responseHelper.Success("No Negotiation found"));
+                if (result == null)
+                    return Ok(_responseHelper.Success("No Cart found"));
 
-                var resultMap = _mapper.Map<List<NegotiationDto>>(result);
+                var resultMap = _mapper.Map<List<CartDto>>(result);
                 return Ok(_responseHelper.Success("", resultMap));
             }
             catch (SqlException ex)
@@ -71,22 +63,49 @@ namespace Pasar_Maya_Api.Controllers
             }
         }
 
-        [HttpGet("user")]
-        [ProducesResponseType(200, Type = typeof(IEnumerable<NegotiationDto>))]
+        [HttpGet("ByUserId")]
+        [ProducesResponseType(200, Type = typeof(IEnumerable<CartDto>))]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public IActionResult GetNegotiationByUserId([FromQuery] string userId)
+        public IActionResult GetCartsByUserId([FromQuery] string userId)
         {
             try
             {
-                var result = _mapper.Map<List<NegotiationDto>>(_negotiationRepository.GetNegotiationsByUserWhoCreated(userId));
+                var result = _mapper.Map<List<CartDto>>(_cartRepository.GetCartsByUserId(userId));
                 if (!ModelState.IsValid)
                     return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 
                 if (result.Any() != true)
                     return Ok(_responseHelper.Success("No Negotiation found"));
 
-                var resultMap = _mapper.Map<List<NegotiationDto>>(result);
+                var resultMap = _mapper.Map<List<CartDto>>(result);
+                return Ok(_responseHelper.Success("", resultMap));
+            }
+            catch (SqlException ex)
+            {
+                return StatusCode(500, _responseHelper.Error("Something went wrong in sql execution", 500, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, _responseHelper.Error("Something went wrong", 500, ex.Message));
+            }
+        }
+        [HttpGet("ByGroupId/{userId}")]
+        [ProducesResponseType(200, Type = typeof(IEnumerable<CartDto>))]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(404)]
+        public IActionResult GetCartsByGroupId(string userId,[FromQuery] int groupId)
+        {
+            try
+            {
+                var result = _mapper.Map<List<CartDto>>(_cartRepository.GetCartsByGroupId(userId,groupId));
+                if (!ModelState.IsValid)
+                    return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
+
+                if (result.Any() != true)
+                    return Ok(_responseHelper.Success("No Negotiation found"));
+
+                var resultMap = _mapper.Map<List<CartDto>>(result);
                 return Ok(_responseHelper.Success("", resultMap));
             }
             catch (SqlException ex)
@@ -101,24 +120,22 @@ namespace Pasar_Maya_Api.Controllers
         [HttpPost]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
-        public IActionResult AddNegotiation([FromBody] NegotiationsPostDto negotiationsPostDto)
+        public IActionResult AddCart([FromBody] CartPostDto cartPostDto)
         {
             try
             {
-                var negotiation = _mapper.Map<ProductNegotiation>(negotiationsPostDto);
-                negotiation.NegotiateBy = _userRepository.GetUser(negotiationsPostDto.NegotiateById);
-                negotiation.Product = _productRepository.GetProduct(negotiationsPostDto.ProductId);
-                negotiation.CreatedAt = DateTime.Now;
-                negotiation.UpdatedAt = DateTime.Now;
-
+                var cart = _mapper.Map<Cart>(cartPostDto);
+                cart.CreatedAt = DateTime.Now;
+                cart.UpdatedAt = DateTime.Now;
+               
                 if (!ModelState.IsValid)
                     return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 
-     
-                if (!_negotiationRepository.AddNegotiation(negotiation))
+
+                if (_cartRepository.AddCart(cart))
                     throw new Exception("Something went wrong while adding product");
 
-                return Ok(_responseHelper.Success("Negotation added successfully"));
+                return Ok(_responseHelper.Success("Cart added successfully"));
             }
             catch (SqlException ex)
             {
@@ -130,28 +147,26 @@ namespace Pasar_Maya_Api.Controllers
             }
         }
 
-        [HttpPut("{negotiationId}")]
+        [HttpPut("{cartId}")]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public IActionResult UpdateNegotiation(int negotiationId, [FromBody] NegotiationPutDto negotiationPutDto)
+        public IActionResult UpdateCart(int cartId, [FromBody] CartPutDto cartPutDto)
         {
             try
             {
-                var negotiation = _mapper.Map<ProductNegotiation>
-                    (_negotiationRepository.GetNegotiationsById(negotiationId));
-                _mapper.Map(negotiationPutDto, negotiation);
-                negotiation.UpdatedAt = DateTime.Now;
+                var cart = _mapper.Map<Cart>
+                    (_cartRepository.GetCartById(cartId));
+                _mapper.Map(cartPutDto, cart);
+                cart.UpdatedAt = DateTime.Now;
 
                 if (!ModelState.IsValid)
                     return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 
-            
-
-                if (!_negotiationRepository.UpdateNegotiation(negotiation))
+                if (!_cartRepository.UpdateCart(cart))
                     throw new Exception("Something went wrong while updating product");
 
-                return Ok(_responseHelper.Success("Negotiation updated successfully"));
+                return Ok(_responseHelper.Success("Cart updated successfully"));
             }
             catch (SqlException ex)
             {
@@ -163,14 +178,14 @@ namespace Pasar_Maya_Api.Controllers
             }
         }
 
-        [HttpDelete("{negotiationId}")]
+        [HttpDelete("{cartId}")]
         [ProducesResponseType(204)]
         [ProducesResponseType(400)]
-        public IActionResult DeleteNegotiaion(int negotiationId)
+        public IActionResult DeleteCart(int cartId)
         {
             try
             {
-                _negotiationRepository.DeleteNegotiation(negotiationId);
+                _cartRepository.DeleteCart(cartId);
                 return Ok(_responseHelper.Success("Product deleted successfully"));
             }
             catch (SqlException ex)

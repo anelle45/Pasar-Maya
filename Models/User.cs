@@ -15,5 +15,8 @@ namespace Pasar_Maya_Api.Models
         public ICollection<Order> Orders { get; set; }
         public ICollection<Notification> Notifications { get; set; }
         public ICollection<UserArea> UserAreas { get; set; }
+        public ICollection<Cart> Cart { get; set; }
+        public int MarketId { get; set; }
+        public Market Market { get; set; }
     }
 }

@@ -19,5 +19,7 @@
         public ICollection<ProductReview> ProductReviews { get; set; }
         public ICollection<ProductNegotiation> ProductNegotiations { get; set; }
 
+        public ICollection<CartsProducts> CartProducts { get; set; }
+
     }
 }

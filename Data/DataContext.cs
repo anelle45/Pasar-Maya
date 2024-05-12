@@ -32,7 +32,8 @@ namespace Pasar_Maya_Api.Data
         public DbSet<ProductReviewImage> ProductReviewImages { get; set; }
         /*public DbSet<User> Users { get; set; }*/
         public DbSet<UserArea> UserAreas { get; set; }
-
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<Market> Markets { get; set; }  
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
             base.OnModelCreating(modelBuilder);
@@ -144,6 +145,28 @@ namespace Pasar_Maya_Api.Data
                 .HasOne(o => o.Product)
                 .WithMany(o => o.Orders)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<CartsProducts>()
+                .HasKey(cp => new { cp.CartId, cp.ProductId });
+
+            modelBuilder.Entity<CartsProducts>()
+                .HasOne(cp => cp.Cart)
+                .WithMany(c => c.CartProducts)
+                .HasForeignKey(cp => cp.CartId);
+
+            modelBuilder.Entity<CartsProducts>()
+                .HasOne(cp => cp.Product)
+                .WithMany(p => p.CartProducts)
+                .HasForeignKey(cp => cp.ProductId);
+
+            modelBuilder.Entity<Cart>().Ignore(c => c.Quantity);
+
+            modelBuilder.Entity<User>()
+             .HasOne(u => u.Market)
+             .WithMany(m => m.user)
+             .HasForeignKey(u => u.MarketId);
+
+
         }
-	}
+    }
 }

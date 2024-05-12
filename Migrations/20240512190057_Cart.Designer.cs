@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Pasar_Maya_Api.Data;
 
@@ -11,9 +12,11 @@ using Pasar_Maya_Api.Data;
 namespace Pasar_Maya_Api.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20240512190057_Cart")]
+    partial class Cart
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,21 +24,6 @@ namespace Pasar_Maya_Api.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("CartsProducts", b =>
-                {
-                    b.Property<int>("CartId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.HasKey("CartId", "ProductId");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("CartsProducts");
-                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -543,7 +531,14 @@ namespace Pasar_Maya_Api.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
                     b.ToTable("Markets");
                 });
@@ -697,6 +692,9 @@ namespace Pasar_Maya_Api.Migrations
                     b.Property<int>("AreaId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("Cartid")
+                        .HasColumnType("int");
+
                     b.Property<int>("CommodityId")
                         .HasColumnType("int");
 
@@ -734,6 +732,8 @@ namespace Pasar_Maya_Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AreaId");
+
+                    b.HasIndex("Cartid");
 
                     b.HasIndex("CommodityId");
 
@@ -873,9 +873,6 @@ namespace Pasar_Maya_Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("MarketId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -891,28 +888,7 @@ namespace Pasar_Maya_Api.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.HasIndex("MarketId");
-
                     b.HasDiscriminator().HasValue("User");
-                });
-
-            modelBuilder.Entity("CartsProducts", b =>
-                {
-                    b.HasOne("Pasar_Maya_Api.Models.Cart", "Cart")
-                        .WithMany("CartProducts")
-                        .HasForeignKey("CartId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Pasar_Maya_Api.Models.Product", "Product")
-                        .WithMany("CartProducts")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Cart");
-
-                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -971,7 +947,7 @@ namespace Pasar_Maya_Api.Migrations
                     b.HasOne("Pasar_Maya_Api.Models.User", "user")
                         .WithMany("Cart")
                         .HasForeignKey("userId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("user");
@@ -1075,6 +1051,17 @@ namespace Pasar_Maya_Api.Migrations
                     b.Navigation("Image");
                 });
 
+            modelBuilder.Entity("Pasar_Maya_Api.Models.Market", b =>
+                {
+                    b.HasOne("Pasar_Maya_Api.Models.User", "user")
+                        .WithOne("Market")
+                        .HasForeignKey("Pasar_Maya_Api.Models.Market", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("user");
+                });
+
             modelBuilder.Entity("Pasar_Maya_Api.Models.Notification", b =>
                 {
                     b.HasOne("Pasar_Maya_Api.Models.User", "User")
@@ -1169,6 +1156,10 @@ namespace Pasar_Maya_Api.Migrations
                         .HasForeignKey("AreaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Pasar_Maya_Api.Models.Cart", null)
+                        .WithMany("products")
+                        .HasForeignKey("Cartid");
 
                     b.HasOne("Pasar_Maya_Api.Models.Commodity", "Commodity")
                         .WithMany("Products")
@@ -1284,17 +1275,6 @@ namespace Pasar_Maya_Api.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Pasar_Maya_Api.Models.User", b =>
-                {
-                    b.HasOne("Pasar_Maya_Api.Models.Market", "Market")
-                        .WithMany("user")
-                        .HasForeignKey("MarketId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Market");
-                });
-
             modelBuilder.Entity("Pasar_Maya_Api.Models.Area", b =>
                 {
                     b.Navigation("CommodityAreas");
@@ -1308,7 +1288,7 @@ namespace Pasar_Maya_Api.Migrations
 
             modelBuilder.Entity("Pasar_Maya_Api.Models.Cart", b =>
                 {
-                    b.Navigation("CartProducts");
+                    b.Navigation("products");
                 });
 
             modelBuilder.Entity("Pasar_Maya_Api.Models.Commodity", b =>
@@ -1354,11 +1334,6 @@ namespace Pasar_Maya_Api.Migrations
                     b.Navigation("ProductReviewImages");
                 });
 
-            modelBuilder.Entity("Pasar_Maya_Api.Models.Market", b =>
-                {
-                    b.Navigation("user");
-                });
-
             modelBuilder.Entity("Pasar_Maya_Api.Models.Notification", b =>
                 {
                     b.Navigation("NotificationImages");
@@ -1366,8 +1341,6 @@ namespace Pasar_Maya_Api.Migrations
 
             modelBuilder.Entity("Pasar_Maya_Api.Models.Product", b =>
                 {
-                    b.Navigation("CartProducts");
-
                     b.Navigation("Orders");
 
                     b.Navigation("ProductImages");
@@ -1389,6 +1362,9 @@ namespace Pasar_Maya_Api.Migrations
                     b.Navigation("DiscussionAnswers");
 
                     b.Navigation("Discussions");
+
+                    b.Navigation("Market")
+                        .IsRequired();
 
                     b.Navigation("Notifications");
 
