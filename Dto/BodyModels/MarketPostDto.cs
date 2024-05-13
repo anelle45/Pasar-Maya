@@ -4,7 +4,6 @@ namespace Pasar_Maya_Api.Dto.BodyModels
 {
     public class MarketPostDto
     {
-        public int Id { get; set; }
         public string Name { get; set; }
         public string Address { get; set; }
         public string Description { get; set; }
