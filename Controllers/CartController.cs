@@ -20,6 +20,7 @@ namespace Pasar_Maya_Api.Controllers
         private readonly IMapper _mapper;
         private readonly ResponseHelper _responseHelper;
         private readonly ICartRepository _cartRepository;
+        private readonly IUserRepository _userRepository;
         public CartController(
             IMapper mapper,
             ResponseHelper responseHelper,
@@ -32,6 +33,7 @@ namespace Pasar_Maya_Api.Controllers
             )
         {
             _mapper = mapper;
+            _userRepository = userRepository;
             _responseHelper = responseHelper;
             _cartRepository = cartRepository;
         }
@@ -43,15 +45,15 @@ namespace Pasar_Maya_Api.Controllers
         {
             try
             {
-                var result = _mapper.Map<CartDto>(_cartRepository.GetCartById(cartId));
+                var result = _cartRepository.GetCartById(cartId);
                 if (!ModelState.IsValid)
                     return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 
                 if (result == null)
                     return Ok(_responseHelper.Success("No Cart found"));
 
-                var resultMap = _mapper.Map<List<CartDto>>(result);
-                return Ok(_responseHelper.Success("", resultMap));
+                var resultMap = _mapper.Map<CartDto>(result);
+                return Ok(_responseHelper.Success("", result));
             }
             catch (SqlException ex)
             {
@@ -71,15 +73,15 @@ namespace Pasar_Maya_Api.Controllers
         {
             try
             {
-                var result = _mapper.Map<List<CartDto>>(_cartRepository.GetCartsByUserId(userId));
+                var result = _cartRepository.GetCartsByUserId(userId);
                 if (!ModelState.IsValid)
                     return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 
-                if (result.Any() != true)
-                    return Ok(_responseHelper.Success("No Negotiation found"));
+                if (!result.Any())
+                    return Ok(_responseHelper.Success("No Cart found"));
 
-                var resultMap = _mapper.Map<List<CartDto>>(result);
-                return Ok(_responseHelper.Success("", resultMap));
+                var resultDto = _mapper.Map<List<CartDto>>(result);
+                return Ok(_responseHelper.Success("", resultDto));
             }
             catch (SqlException ex)
             {
@@ -103,7 +105,7 @@ namespace Pasar_Maya_Api.Controllers
                     return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 
                 if (result.Any() != true)
-                    return Ok(_responseHelper.Success("No Negotiation found"));
+                    return Ok(_responseHelper.Success("No Cart found"));
 
                 var resultMap = _mapper.Map<List<CartDto>>(result);
                 return Ok(_responseHelper.Success("", resultMap));
@@ -125,6 +127,13 @@ namespace Pasar_Maya_Api.Controllers
             try
             {
                 var cart = _mapper.Map<Cart>(cartPostDto);
+                cart.user = _userRepository.GetUser(cartPostDto.UserId);
+                cart.CartProducts = cartPostDto.ProductQuantities.Select(p => new CartsProducts
+                {
+                    ProductId = p.ProductId,
+                    Quantity = p.Quantity
+                }).ToList();
+                ICollection<ProductQuantity> productQuantities = _mapper.Map<List<ProductQuantity>>(cartPostDto.ProductQuantities);
                 cart.CreatedAt = DateTime.Now;
                 cart.UpdatedAt = DateTime.Now;
                
@@ -132,7 +141,7 @@ namespace Pasar_Maya_Api.Controllers
                     return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 
 
-                if (_cartRepository.AddCart(cart))
+                if (!_cartRepository.AddCart(cart))
                     throw new Exception("Something went wrong while adding product");
 
                 return Ok(_responseHelper.Success("Cart added successfully"));

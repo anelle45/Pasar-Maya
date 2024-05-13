@@ -125,15 +125,16 @@ namespace Pasar_Maya_Api.Controllers
         {
             try
             {
-                var result = _mapper.Map<UserDto>(_marketRepository.GetUsersByMarket(marketId));
+                var result = _mapper.Map<List<UserDto>>(_marketRepository.GetUsersByMarket(marketId));
+
                 if (!ModelState.IsValid)
                     return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 
                 if (result == null)
                     return Ok(_responseHelper.Success("No User found"));
 
-                var resultMap = _mapper.Map<List<MarketDto>>(result);
-                return Ok(_responseHelper.Success("", resultMap));
+              
+                return Ok(_responseHelper.Success("", result));
             }
             catch (SqlException ex)
             {
@@ -159,8 +160,8 @@ namespace Pasar_Maya_Api.Controllers
                     return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 
 
-                if (_marketRepository.AddMarket(market))
-                    throw new Exception("Something went wrong while adding product");
+                if (!_marketRepository.AddMarket(market))
+                    throw new Exception("Something went wrong while adding Market");
 
                 return Ok(_responseHelper.Success("Market added successfully"));
             }

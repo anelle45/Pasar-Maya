@@ -28,12 +28,10 @@ namespace Pasar_Maya_Api.Repository
             return Save();
         }
 
-        Cart? ICartRepository.GetCartById(int cartId)
+        Cart ICartRepository.GetCartById(int cartId)
         {
             var cart = _context.Carts
                 .Include(c => c.CartProducts)
-                    .ThenInclude(cp => cp.Product)
-                .Include(c => c.user)
                 .Where(c => c.id == cartId)
                 .FirstOrDefault();
 
@@ -56,9 +54,8 @@ namespace Pasar_Maya_Api.Repository
         ICollection<Cart> ICartRepository.GetCartsByUserId(string userId)
         {
             return _context.Carts
-               .Include(c => c.CartProducts)
+                .Include(c => c.CartProducts)
                     .ThenInclude(cp => cp.Product)
-                .Include(c => c.user)
                 .Where(c => c.user.Id == userId)
                 .ToList();
         }

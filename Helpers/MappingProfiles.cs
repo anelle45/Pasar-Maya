@@ -47,6 +47,20 @@ namespace Pasar_Maya_Api.Helpers
                 .ForMember(dest => dest.OwnerId, options => options.MapFrom(src => src.User.Id));
             CreateMap<ProductPostDto, Product>();
             CreateMap<ProductPutDto, Product>();
+
+            CreateMap<Market, MarketDto>()
+               .ForMember(dest => dest.UserIds, options => options.MapFrom(src => src.user.Select(u => u.Id)));
+            CreateMap<MarketPostDto, Market>();
+            CreateMap<MarketPutDto, Market>();
+
+            CreateMap<Cart, CartDto>()
+                .ForMember(dest => dest.ProductQuantities, options => options.MapFrom(src => src.CartProducts.Select(cp => new ProductQuantityDto { ProductId = cp.ProductId, Quantity = cp.Quantity })));
+
+
+            CreateMap<ProductQuantityDto, ProductQuantity>();
+            CreateMap<CartPostDto, Cart>();
+            CreateMap<CartPutDto, Cart>();
+
             CreateMap<ProductReview, ProductReviewDto>()
                 .ForMember(dest => dest.ReviewedBy, options => options.MapFrom(src => src.ReviewedBy))
                 .ForMember(dest => dest.ProductId, options => options.MapFrom(src => src.Product.Id));
