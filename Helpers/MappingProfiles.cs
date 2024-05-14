@@ -48,8 +48,12 @@ namespace Pasar_Maya_Api.Helpers
             CreateMap<ProductPostDto, Product>();
             CreateMap<ProductPutDto, Product>();
 
+
             CreateMap<Market, MarketDto>()
-               .ForMember(dest => dest.UserIds, options => options.MapFrom(src => src.user.Select(u => u.Id)));
+                .ForMember(dest => dest.UserIds, options => options.MapFrom(src => src.user.Select(u => u.Id).ToList()));
+            CreateMap<MarketDto, Market>()
+                .ForMember(dest => dest.user, option => option.Ignore());
+
             CreateMap<MarketPostDto, Market>();
             CreateMap<MarketPutDto, Market>();
 

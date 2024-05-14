@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Pasar_Maya_Api.Data;
+using Pasar_Maya_Api.Dto;
 using Pasar_Maya_Api.Interfaces;
 using Pasar_Maya_Api.Models;
 
@@ -39,9 +40,12 @@ namespace Pasar_Maya_Api.Repository
             return market;
         }
 
-        public ICollection<Market> GetMarkets()
+        public ICollection<Market> GetMarkets(PaginationDto paginationDto)
         {
-            return _context.Markets.Include(m => m.user).ToList();
+            return _context.Markets.Include(m => m.user)
+            .Skip((paginationDto.PageNumber - 1) * paginationDto.PageSize)
+            .Take(paginationDto.PageSize)
+                .ToList();
         }
 
         public Market GetMarketsByUserId(string userId)

@@ -39,19 +39,21 @@ namespace Pasar_Maya_Api.Controllers
         [ProducesResponseType(200, Type = typeof(IEnumerable<MarketDto>))]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
-        public IActionResult GetMarkets()
+        public IActionResult GetMarkets([FromQuery] PaginationDto paginationDto)
         {
             try
             {
-                var result = _mapper.Map<MarketDto>(_marketRepository.GetMarkets());
+                var markets = _marketRepository.GetMarkets(paginationDto);
+               
+             
                 if (!ModelState.IsValid)
                     return BadRequest(_responseHelper.Error(ModelState.Select(ex => ex.Value?.Errors).FirstOrDefault()?.Select(e => e.ErrorMessage).FirstOrDefault()?.ToString()));
 
-                if (result == null)
+                if (markets == null)
                     return Ok(_responseHelper.Success("No Market found"));
 
-                var resultMap = _mapper.Map<List<MarketDto>>(result);
-                return Ok(_responseHelper.Success("", resultMap));
+                var resultDto = _mapper.Map<List<MarketDto>>(markets);
+                return Ok(_responseHelper.Success("", resultDto));
             }
             catch (SqlException ex)
             {
@@ -63,7 +65,7 @@ namespace Pasar_Maya_Api.Controllers
             }
         }
         [HttpGet("{marketId}")]
-        [ProducesResponseType(200, Type = typeof(IEnumerable<MarketDto>))]
+        [ProducesResponseType(200, Type = typeof(MarketDto))]
         [ProducesResponseType(400)]
         [ProducesResponseType(404)]
         public IActionResult GetMarketById(int marketId)
@@ -77,8 +79,7 @@ namespace Pasar_Maya_Api.Controllers
                 if (result == null)
                     return Ok(_responseHelper.Success("No Market found"));
 
-                var resultMap = _mapper.Map<List<MarketDto>>(result);
-                return Ok(_responseHelper.Success("", resultMap));
+                return Ok(_responseHelper.Success("", result));
             }
             catch (SqlException ex)
             {
@@ -105,8 +106,7 @@ namespace Pasar_Maya_Api.Controllers
                 if (result.Any() != true)
                     return Ok(_responseHelper.Success("No Negotiation found"));
 
-                var resultMap = _mapper.Map<List<MarketDto>>(result);
-                return Ok(_responseHelper.Success("", resultMap));
+                return Ok(_responseHelper.Success("", result));
             }
             catch (SqlException ex)
             {
@@ -117,6 +117,7 @@ namespace Pasar_Maya_Api.Controllers
                 return StatusCode(500, _responseHelper.Error("Something went wrong", 500, ex.Message));
             }
         }
+
         [HttpGet("GetUsers")]
         [ProducesResponseType(200, Type = typeof(IEnumerable<MarketDto>))]
         [ProducesResponseType(400)]
