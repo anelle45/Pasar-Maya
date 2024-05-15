@@ -10,5 +10,7 @@
 		public string Picture { get; set; }
 		public string NotificationToken { get; set; }
 		public int Status { get; set; }
+
+		public int MarketId { get; set; }
 	}
 }
