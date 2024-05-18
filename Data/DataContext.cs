@@ -159,12 +159,6 @@ namespace Pasar_Maya_Api.Data
                 .WithMany(p => p.CartProducts)
                 .HasForeignKey(cp => cp.ProductId);
 
-            modelBuilder.Entity<User>()
-             .HasOne(u => u.Market)
-             .WithMany(m => m.user)
-             .HasForeignKey(u => u.MarketId);
-
-
         }
     }
 }
