@@ -20,7 +20,7 @@ steps:
       - $_DEPLOY_REGION
       - '--platform'
       - $_PLATFORM
-  - name: 'docker/compose:1.26.2'
+  - name: 'docker/compose:2.27.0'
     args: ['up', '-d']
     entrypoint: gcloud
 
