@@ -20,7 +20,10 @@ steps:
       - $_DEPLOY_REGION
       - '--platform'
       - $_PLATFORM
+  - name: 'docker/compose:1.26.2'
+    args: ['up', '-d']
     entrypoint: gcloud
+
 timeout: 1200s
 images:
   - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_REPO/$_SERVICE_NAME:$COMMIT_SHA'
